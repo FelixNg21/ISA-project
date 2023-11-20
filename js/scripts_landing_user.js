@@ -15,29 +15,20 @@ const generateImage = () => {
   document.getElementById("loading-icon").style.display = "block";
 
   xhttp.open("GET", url + `image/${prompt}`, true);
-  xhttp.setRequestHeader("Content-Type", "image/jpeg");
+  // xhttp.setRequestHeader("Content-Type", "image/jpeg");
   xhttp.send();
-  xhttp.onreadystatechange = ()=>{
+  xhttp.onreadystatechange = function() {
     console.log(this.readyState)
     if (this.readyState == 4) {
       document.getElementById("loading-icon").style.display = "none";
       if (this.status == 200) {
         console.log(this.response);
-        // console.log(imageUrl);
 
-        // document.getElementById("image").onload = function() {
-        //   document.getElementById("image").src = imageUrl;
-        // }
-        document.getElementById("image").src = this.response;
-
-        // console.log(this.responseText)ß
-        // let response = JSON.parse(this.responseText);
-        // let image = response.image_base64;
-        // let image_path = response.image_generated_path;
-        // console.log(image_path)
-        // FOR SOME REASON, the image is not displaying after its being generated, instead the page just refreshes :(
-        // document.getElementById("image").src = imageUrl;
-        // document.getElementById("image").src = image_path;
+        const baseImage = JSON.parse(this.response).baseImage;
+        document.getElementById("image").src = `data:image/jpeg;base64,${baseImage}`
+      }else{
+        console.log(this.status);
+        console.log(this.response);
       }
     }
   } ;

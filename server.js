@@ -7,6 +7,7 @@ let mysql = require('mysql');
 let cors = require('cors');
 const crypto = require('crypto');
 const axios = require('axios')
+const fs = require('fs');
 
 let db = mysql.createConnection({
     host: "localhost",
@@ -28,6 +29,8 @@ app.use(cors({
   // credentials: true,
   optionsSuccessStatus: 204,
 }));
+
+app.options('*', cors());
 // app.use(function(req, res, next) {
 //     res.header("Access-Control-Allow-Origin", "https://felix-ng.com");
 //     res.header("Access-Control-Allow-Methods","*")
@@ -126,13 +129,15 @@ app.get("/COMP4537/project/image/:prompt", async function(req, res) {
 
   const url = `https://isa-project-eyeessay.hf.space/image/${prompt}`;
 
-  const imageResponse = await axios.get(url, { 
-    responseType: 'arraybuffer' 
-  });
-
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader("Content-Type", 'image/jpeg');
-  res.status(200).send(imageResponse.data);
+  await axios.get(url, { responseType: 'arraybuffer' })
+  .then(response => {
+    const baseImage = Buffer.from(response.data, 'binary').toString('base64');
+    res.status(200).send({ baseImage });
+  })
+  .catch(error => {
+    console.log("error:", error.message);
+    res.status(500).send("Internal server error");
+  })
 
 })
 
