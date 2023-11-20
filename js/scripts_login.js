@@ -1,4 +1,4 @@
-const url = "http://localhost:5500/ISA-project";
+const url = "https://elainesweb.com/COMP4537/project";
 let loggingIn = true;
 
 function swapForm() {
@@ -41,6 +41,9 @@ function submit(){
         "username": username,
         "password": password
     };
+
+    console.log("username:", username);
+    console.log("password:", password);
 
     console.log("sending the post request to !!!!", url+endpoint)
     xhttp.open("POST", url+endpoint, true);

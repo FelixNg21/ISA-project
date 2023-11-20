@@ -3,11 +3,38 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
   <title>Document</title>
+  <style>
+    #loading-icon {
+      display: none;
+      font-size: 2em;
+    }
+    #image {
+      margin: auto;
+      display: block;
+      max-width: 100%;
+      max-height: 400px;
+    }
+  </style>
 </head>
 <body>
-  <h1>Landing User</h1>
-  <p id="username"></p>
-  <script src="js/scripts_landing_user.js"> </script>
+    <div style="text-align: center;">
+        <p id="username"></p>
+        <h3>Enter prompt below</h3>
+        <div id="loading-icon"><i class="fas fa-circle-notch fa-spin"></i></div>
+        <label for="prompt"></label>
+        <input id="prompt" type="text">
+        <img id="image" src="" alt="">
+        <br/>
+        <br/>
+        <div>
+          <button onclick="generateImage()">Generate image</button>
+        </div>
+    </div>
+    <script src="js/scripts_landing_user.js"> </script>
+
+  
 </body>
 </html>
