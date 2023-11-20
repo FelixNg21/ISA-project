@@ -55,14 +55,15 @@ app.post("/ISA-project/login", function(req, res) {
     // let sql2 = "SELECT *, role FROM user WHERE Username = ? AND Password = ? LEFT JOIN userrole ON user.UserID = role.UserID AND "
     let sql = 'SELECT role FROM role JOIN userrole ON role.roleid = userrole.roleid JOIN user ON userrole.userid = user.userid WHERE user.Username = ? AND user.Password = ?';
     db.query(sql, [username, password_hash], function(err, result) {
+      console.log(result[0].role)
         if (err) throw err;
         if (result.length > 0) {
-            res.writeHead(200, {'Content-Type': 'application/json'})
-            res.end(JSON.stringify(
-              {message:"Registration successful",
+            // res.writeHead(201, {'Content-Type': 'application/json'})
+            res.status(201).send(JSON.stringify(
+              {message:"Login successful",
               username: username,
-              type: 'login'
-            }));
+              type: result[0].role
+            })); 
         } else {
             res.writeHead(401, {'Content-Type': 'application/json'})
             res.end("Login failed");
@@ -91,7 +92,7 @@ app.post("/ISA-project/register", function(req, res) {
         res.status(201).send(JSON.stringify(
           {message:"Registration successful",
           username: username,
-          type: 'register'
+          type: 'user'
         })); 
     })
 })

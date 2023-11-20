@@ -52,11 +52,13 @@ function submit(){
             if (this.status == 201){
               message = JSON.parse(this.responseText);
                 //successful
-                if (message.type === 'register'){ // user
-                    console.log("user successfully registered")
+                if (message.type === 'admin'){ // user
+                    console.log("admin successfully logged in")
                     // user landing page
-                    window.location.href = `./landing_user.html?username=${message.username}`;
-                }else if (message.type === 'login'){ // admin
+                    window.location.href = `./landing_admin.html?username=${message.username}`;
+                }else if (message.type === 'user'){ // admin
+                  console.log("user successfully logged in")
+                  window.location.href = `./landing_user.html?username=${message.username}`;
                   // redirected to admin landing page
                     // login and checks if admin or regula user
                 }
