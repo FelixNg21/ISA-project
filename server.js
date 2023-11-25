@@ -45,6 +45,20 @@ app.options('*', cors());
 // }
 // )
 
+db.promise = (sql, values) => {
+  return new Promise((resolve, reject) => {
+    db.query(sql, values, (err, result) => {
+      if (err) {
+        console.log(err);
+        reject(new Error());
+      }
+      else {
+        console.log(result);
+        resolve(result);
+      }
+    })
+  })
+};
 
 app.post("/COMP4537/project/login", function(req, res) {
   let body = '';
@@ -104,23 +118,75 @@ app.post("/COMP4537/project/register", function(req, res) {
 
     // hash the password
     
-    let sql = "INSERT INTO user (Username, Password) VALUES (?, ?)";
-    db.query(sql, [username, password_hash], function(err, result) {
-      console.log("error", err)
-      console.log("result", result)
-        if (err) {
-          throw err;
+    let sql = `INSERT INTO user (username, password) VALUES (?, ?)`;
+    db.promise(sql, [username, password_hash])
+      .then((user_result) => {
+      const userid = user_result.insertId;
+      console.log("user_result:", user_result)
+
+      const apikey = crypto.randomBytes(32).toString('hex');
+      const apikey_sql = `INSERT INTO apikey (apikey, userid) VALUES (?, ?)`;
+
+      if (user_result.affectedRows > 0) {
+        const userrole_sql = `INSERT INTO userrole (userid, roleid) VALUES (?, 2)`;
+        return db.promise(userrole_sql, [userid])
+          .then((result) => {
+            const apikey = crypto.randomBytes(32).toString('hex');
+            const apikey_sql = `INSERT INTO apikey (apikey, userid) VALUES (?, ?)`;
+            return db.promise(apikey_sql, [apikey, userid])
+          });;
+      } else {
+        throw 'Could not insert user';
+      }
+    }).then((apikey_result) => {
+        console.log(apikey_result)
+        const apikeyid = apikey_result.insertId;
+
+        const apikeycall_sql = `INSERT INTO apikeycall (calls, apikeyid) VALUES (0, ?)`;
+
+        if (apikey_result.affectedRows > 0) {
+          return db.promise(apikeycall_sql, [apikeyid]);
+        } else {
+          throw 'Could not insert api key';
         }
-        // res.writeHead(201, {'Content-Type': ''})
-        res.status(201).send(JSON.stringify(
-          {message:"Registration successful",
-          username: username,
-          type: 'user'
-        })); 
-    })
+      }).then((apikeycall_result) => {
+        console.log(apikeycall_result)
+
+        if (apikeycall_result.affectedRows > 0) {
+          res.status(201).send(JSON.stringify(
+            {message:"Registration and apikey creation successful }",
+            username: username,
+            type: 'user'
+          })); 
+        } else {
+          throw 'Could not insert into api key call'
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+      })
+      });
+
+    });
+
+    //old
+    // db.query(sql, [username, password_hash], function(err, result) {
+    //   console.log("error", err)
+    //   console.log("result", result)
+    //     if (err) {
+    //       throw err;
+    //     }
+    //     // res.writeHead(201, {'Content-Type': ''})
+    //     res.status(201).send(JSON.stringify(
+    //       {message:"Registration successful",
+    //       username: username,
+    //       type: 'user'
+    //     })); 
+    // }).then(() => {
+      
     
-  });
-})
+    // }
+    // );
 
 app.get("/COMP4537/project/image/:prompt", async function(req, res) {
   console.log(req.headers.origin);
