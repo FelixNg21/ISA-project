@@ -1,4 +1,5 @@
-const url = "https://elainesweb.com/COMP4537/project";
+const version = 'v2'
+const url = `https://elainesweb.com/COMP4537/project/${version}`;
 let loggingIn = true;
 
 function swapForm() {
@@ -15,7 +16,7 @@ function submit(){
     // console.log(url)
     let endpoint = "";
     let xhttp = new XMLHttpRequest();
-
+    xhttp.withCredentials = true;
     username = document.getElementById("usr").value;
     password = document.getElementById("psw").value;
     password_reenter = document.getElementById("psw-repeat").value;
@@ -53,15 +54,16 @@ function submit(){
     xhttp.onreadystatechange = function() {
         if (this.readyState == 4){
             if (this.status == 201){
+              // console.log(document.cookie);
               message = JSON.parse(this.responseText);
                 //successful
                 if (message.type === 'admin'){ // user
                     console.log("admin successfully logged in")
                     // user landing page
-                    window.location.href = `./landing_admin.html?username=${message.username}`;
+                    // window.location.href = `./landing_admin.html?username=${message.username}`;
                 }else if (message.type === 'user'){ // admin
                   console.log("user successfully logged in")
-                  window.location.href = `./landing_user.html?username=${message.username}`;
+                  // window.location.href = `./landing_user.html?username=${message.username}`;
                   // redirected to admin landing page
                     // login and checks if admin or regula user
                 }

@@ -1,0 +1,114 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Image Generator",
+    "description": "Create an image from a text prompt",
+    "version": "2.0"
+  },
+  "servers": [
+    {
+      "url": "https://elainesweb.com/COMP4537/project/v2"
+    }
+  ],
+  "paths": {
+    "/login": {
+      "post": {
+        "tags": ["Login"],
+        "summary": "Login to the application",
+        "description": "Endpoint 1 Description",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "schema": {
+              "$ref": "#/definitions/ResponseModel"
+            }
+          }
+        }
+      }
+    },
+    "/register": {
+      "post": {
+        "tags": ["Register"],
+        "summary": "Register a User",
+        "description": "Endpoint 2 Description",
+        "parameters": [
+          {
+            "name": "requestBody",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/RequestModel"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "schema": {
+              "$ref": "#/definitions/ResponseModel"
+            }
+          }
+        }
+      }
+    },
+    "/image:prompt": {
+      "get": {
+        "tags": ["Image"],
+        "summary": "Generate an image from a prompt",
+        "description": "Endpoint 3 Description",
+        "parameters": [
+          {
+            "name": "prompt",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "schema": {
+              "$ref": "#/definitions/ResponseModel"
+            }
+          }
+        }
+      }
+    },
+    "/endpoint": {
+      "get": {
+        "tags": ["Endpoint"],
+        "summary": "Endpoint 4 Summary",
+        "description": "Endpoint 4 Description",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "schema": {
+              "$ref": "#/definitions/ResponseModel"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "RequestModel": {
+      "type": "object",
+      "properties": {
+        "property1": {
+          "type": "string"
+        },
+        "property2": {
+          "type": "number"
+        }
+      }
+    },
+    "ResponseModel": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

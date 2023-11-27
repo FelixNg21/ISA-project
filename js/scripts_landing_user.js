@@ -1,7 +1,7 @@
 // const url = "http://saraharch.com/COMP4537/project/flask";
 // const url = "http://127.0.0.1:5000"
-// const url = "https://isa-project-eyeessay.hf.space"
-const url = "https://elainesweb.com/COMP4537/project/";
+const version = 'v2'
+const url = `https://elainesweb.com/COMP4537/project/${version}`;
 
 let params = new URLSearchParams(window.location.search);
 let username = params.get("username");
@@ -11,6 +11,7 @@ const generateImage = () => {
   const prompt = document.getElementById("prompt").value;
 
   const xhttp = new XMLHttpRequest();
+  xhttp.withCredentials = true;
 
   document.getElementById("loading-icon").style.display = "block";
 
