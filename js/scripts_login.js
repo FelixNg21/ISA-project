@@ -49,6 +49,7 @@ function submit(){
     console.log("sending the post request to !!!!", url+endpoint)
     xhttp.open("POST", url+endpoint, true);
     xhttp.setRequestHeader("Content-Type", "application/json",
+    "Access-Control-Allow-Credentials", "true",
     "Access-Control-Allow-Origin", "*");
     xhttp.send(JSON.stringify(data));
     xhttp.onreadystatechange = function() {
@@ -63,7 +64,7 @@ function submit(){
                     // window.location.href = `./landing_admin.html?username=${message.username}`;
                 }else if (message.type === 'user'){ // admin
                   console.log("user successfully logged in")
-                  // window.location.href = `./landing_user.html?username=${message.username}`;
+                  window.location.href = `./landing_user.html?username=${message.username}`;
                   // redirected to admin landing page
                     // login and checks if admin or regula user
                 }

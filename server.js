@@ -9,6 +9,7 @@ const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const axios = require("axios");
 const fs = require("fs");
+const cookieParser = require('cookie-parser')
 // const url = require('url');
 const port = process.env.PORT || 5500;
 const SECRETKEY = crypto.randomBytes(32).toString("hex");
@@ -37,30 +38,34 @@ db.connect(function (err) {
 });
 
 // app.use(express.json());
-app.use(
-  cors({
-    origin: "https://felix-ng.com",
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-    credentials: true,
-    optionsSuccessStatus: 204,
-  })
+// app.use(
+//   cors({
+//     origin: ["https://felix-ng.com"],
+//     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+//     credentials: true,
+//     optionsSuccessStatus: 204,
+//   })
+// );
+
+// app.options("*", cors());
+app.use(function(req, res, next) {
+    res.header("Access-Control-Allow-Origin", "https://felix-ng.com");
+    res.header("Access-Control-Allow-Methods","*"),
+    res.header('Access-Control-Allow-Credentials', "true"),
+    res.header("Access-Control-Allow-Headers","Origin, X-Requested-With, Content-Type, Authorization, Accept");
+    // next();
+
+    if (req.method === "OPTIONS") {
+      res.status(204).end();
+    } else {
+      next();
+    }
+}
 );
 
-app.options("*", cors());
-// app.use(function(req, res, next) {
-//     res.header("Access-Control-Allow-Origin", "https://felix-ng.com");
-//     res.header("Access-Control-Allow-Methods","*")
-//     res.header("Access-Control-Allow-Headers","Origin, X-Requested-With, Content-Type, Accept");
-//     // next();
+// app.use(express.cookieParser());
 
-//     if (req.method === "OPTIONS") {
-//       res.status(204).end();
-//     } else {
-//       next();
-//     }
-// }
-// )
-
+// connect to database
 db.promise = (sql, values) => {
   return new Promise((resolve, reject) => {
     db.query(sql, values, async (err, result) => {
@@ -83,7 +88,7 @@ function generateToken(payload) {
 }
 
 const jwtAuthentication = (req, res, next) => {
-  const token = req.cookies.access_token;
+  const token = req.cookies.token;
   console.log("token", token)
   try {
       const payload = jwt.verify(token, secretKey);
@@ -141,45 +146,45 @@ app.post(`/COMP4537/project/${version}/login`, (req, res) => {
     db.query(sql, [username, password_hash], async (err, result) => {
       if (err) throw err;
       if (result.length > 0) {
-        // calls
-        // http://localhost:3000/COMP4537/project/${version}/endpoint
-        // /COMP4537/project/${version}/request/update
-        // generates token
         const payload = {user: username, pass: password}
         const jwt_token = generateToken(payload)
         console.log("------------------------setting cookie")
+        console.log(jwt_token)
         // res.writeHead(201, {'Set-Cookie': `token=${jwt_token}; HttpOnly; Secure; Max-Age=3600`, 'Content-Type': 'application/json'});
-        res.cookie('token', jwt_token, {httpOnly: true, secure:true, maxAge: 36000, sameSite:"none"});
+        res.cookie('token', jwt_token, {
+          path:`/`,
+          domain: ".felix-ng.com",
+          httpOnly: true, 
+          secure:true, 
+          maxAge: 360000000, 
+          sameSite:"none"});
         console.log("----------------------------- set cookie token")
-        await axios
-          .patch(
-            `https://elainesweb.com/COMP4537/project/${version}/request/update`,
-            data
-          )
-          .then((result_patch) => {
-            // Assuming successful authentication
-            if (result_patch) {
-              // Redirect the user to a specific route or URL after successful login
-              res.redirect(`https://felix-ng.com/COMP4537/project/v2/landing_admin.html?username=${username}`); // Redirect to '/dashboard' route
-            } else {
-              console.log("failed to redirect user")
-            }
-            // console.log("result patch:");
-            // console.log(result_patch);
-            // // res.writeHead(201, {'Content-Type': 'application/json'})
-            // // res.cookie('token', jwt_token, { httpOnly: true} );
-            // res.status(201)
-            //   .send(
-            //     JSON.stringify({
-            //       message: "Login successful",
-            //       username: username,
-            //       type: result[0].role
-            //     })
-            //   );
-          })
-          .catch((err) => {
-            console.log(err);
-          });
+        res.setHeader('Access-Control-Allow-Origin', "https://felix-ng.com")
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+        res.status(201).send(JSON.stringify({message:"login successful"}));
+        // await axios
+        //   .patch(
+        //     `https://elainesweb.com/COMP4537/project/${version}/request/update`,
+        //     data
+        //   )
+        //   .then((result_patch) => {
+        //     // Assuming successful authentication
+        //     console.log("result patch:");
+        //     console.log(result_patch);
+        //     // res.writeHead(201, {'Content-Type': 'application/json'})
+        //     // res.cookie('token', jwt_token, { httpOnly: true} );
+        //     res.status(201)
+        //       .send(
+        //         JSON.stringify({
+        //           message: "Login successful",
+        //           username: username,
+        //           type: result[0].role
+        //         })
+        //       );
+        //   })
+        //   .catch((err) => {
+        //     console.log(err);
+        //   });
       } else {
         res.writeHead(401, { "Content-Type": "application/json" });
         res.end("Login failed");
