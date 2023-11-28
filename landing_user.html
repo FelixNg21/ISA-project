@@ -36,10 +36,29 @@
         <p id="calls_made">Number of calls made: </p>
         <p id="warning"></p>
 
-        <button onclick="updateUser()">Edit your profile</button>
+        <button onclick="showUserForm()">Edit your profile</button>
+
+        <div>
+          <form id="editUserForm" style="display:none">
+            <div>
+              <label for="userName">Name:</label>
+              <input type="text" id="userName" name="userName" placeholder="Update your username" required>
+            </div>
+            <div>
+              <label for="userPass">Password:</label>
+              <input type="password" id="userPass" name="userPass" placeholder="Update your password" required>
+              <input type="password" id="userPassConfirm" name="userPassConfirm" placeholder="Confirm password" required>
+          
+            </div>
+              <button type="submit" onclick="updateUser(event)">Save Changes</button>
+
+          </form>
+
+        </div>
 
         <button onclick="deleteUser()">KermitSewerSlide</button>
     </div>
+
     <script src="js/scripts_landing_user.js"> </script>
 
   

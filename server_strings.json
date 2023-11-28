@@ -1,0 +1,11 @@
+{
+    "internal_error": "Internal Server Error",
+    "login_successful": "Login successful",
+    "login_failed": "Login failed",
+    "registration_successful": "Registration and apikey creation successful",
+    "unauthorized": "Unauthorized",
+    "failed_auth": "Failed to authenticate token.",
+    "user": "user",
+    "admin": "admin"
+
+}

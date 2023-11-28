@@ -6,19 +6,19 @@ const crypto = require("crypto");
 const axios = require("axios");
 const cookieParser = require("cookie-parser");
 const { parse } = require("path");
-// const url = require('url');
+const strings = require('./server_strings.json');
 const port = process.env.PORT || 5500;
 const SECRETKEY = crypto.randomBytes(32).toString("hex");
+const server_url = "https://elainesweb.com/COMP4537/project"
+const swaggerui = require("swagger-ui-express");
+const swaggerDocument = require('./swagger.json');
 
 const version = "v2";
 
-// let db = mysql.createConnection({
-//   host: "localhost",
-//   user: "root",
-//   password: "",
-//   database: "isaproject",
-// });
+app.use(`/COMP4537/project/${version}/doc`, swaggerui.serve, swaggerui.setup(swaggerDocument));
 
+
+// sql databse credentials
 let db = mysql.createConnection({
   host: "localhost",
   user: "elainesw_project",
@@ -32,17 +32,7 @@ db.connect(function (err) {
   console.log("Connected to db!");
 });
 
-// app.use(express.json());
-// app.use(
-//   cors({
-//     origin: ["https://felix-ng.com"],
-//     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-//     credentials: true,
-//     optionsSuccessStatus: 204,
-//   })
-// );
 
-// app.options("*", cors());
 app.use(function (req, res, next) {
   res.header("Access-Control-Allow-Origin", "https://felix-ng.com");
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS"),
@@ -52,7 +42,6 @@ app.use(function (req, res, next) {
       "Origin, X-Requested-With, Content-Type, Authorization, Accept"
     );
   res.header("Access-Control-Expose-Headers", "Authorization");
-  // next();
 
   if (req.method === "OPTIONS") {
     res.status(204).end();
@@ -63,7 +52,11 @@ app.use(function (req, res, next) {
 app.use(cookieParser());
 
 
-// connect to database
+/**
+ * Function that returns a promise for a mysql query
+ * @param {string} sql
+ * @param {string[]} values
+ */
 db.promise = (sql, values) => {
   return new Promise((resolve, reject) => {
     db.query(sql, values, async (err, result) => {
@@ -76,30 +69,37 @@ db.promise = (sql, values) => {
   });
 };
 
-// generates token
+/**
+ * Function that generates a JWT token
+ * @param {object} payload
+ */
 function generateToken(payload) {
   return jwt.sign(payload, SECRETKEY, { expiresIn: "1h" });
 }
 
+/**
+ * Function that verifies the JWT token
+ * @param {object} payload
+ */
 const jwtAuthentication = (req, res, next) => {
   const token = req.cookies.token;
   try {
     const payload = jwt.verify(token, SECRETKEY);
-    console.log("Payload", payload);
     req.payload = payload;
     next();
   } catch (err) {
-    console.log(err);
     res.clearCookie("token");
     res.status(401).json({
       success: false,
-      error: "Unauthorized",
-      message: "Failed to authenticate token.",
+      error: strings.unauthorized,
+      message: strings.failed_auth,
     });
   }
 };
 
-// POST login a user
+/**
+ * Function that logs in the user or admin and sends the appropriate response
+ */
 app.post(`/COMP4537/project/${version}/login`, (req, res) => {
   let data = {
     method: "POST",
@@ -125,6 +125,8 @@ app.post(`/COMP4537/project/${version}/login`, (req, res) => {
       if (result.length > 0) {
         const payload = { user: username, pass: password };
         const jwt_token = generateToken(payload);
+        // clears cookie
+        res.clearCookie("token"); 
         res.cookie("token", jwt_token, {
           path: `/`,
           httpOnly: true,
@@ -132,35 +134,40 @@ app.post(`/COMP4537/project/${version}/login`, (req, res) => {
           maxAge: 3600000,
           sameSite: "none",
         });
-        await axios.patch(`https://elainesweb.com/COMP4537/project/${version}/request/update`,data)
-          .then(async (result_patch) => {
+        await axios.patch(`${server_url}/${version}/request/update`, data)
+          .then(async () => {
             let inccall_data = {
               username: username,
               password: password_hash,
             };
-            await axios.patch(`https://elainesweb.com/COMP4537/project/${version}/apikeycall/inccall`, inccall_data)
-              .then((result_inccall) => {
+            await axios.patch(`${server_url}/${version}/apikeycall/inccall`, inccall_data)
+              .then(() => {
                 res.status(201).send(
                   JSON.stringify({
-                    message: "Login successful",
+                    message: strings.login_successful,
                     username: username,
                     type: result[0].role,
                   })
                 );
               })
-              .catch((err) => console.log(err))})
+              .catch((err) => {
+                console.log(err)
+                res.status(500).send({"message": strings.internal_error})
+              })})
           .catch((err) => {
             console.log(err);
+            res.status(500).send({"message": strings.internal_error});
           });
       } else {
-        res.writeHead(401, { "Content-Type": "application/json" });
-        res.end("Login failed");
+        res.status(401).send({"message": strings.login_failed});
       }
     });
   });
 });
 
-// POST register a user
+/**
+ *  Function to registers a user and updates tables accordingly
+ */
 app.post(`/COMP4537/project/${version}/register`, (req, res) => {
   let data = {
     method: "POST",
@@ -182,8 +189,6 @@ app.post(`/COMP4537/project/${version}/register`, (req, res) => {
       .update(password)
       .digest("base64");
 
-    // hash the password
-
     let sql = `INSERT INTO user (username, password) VALUES (?, ?)`;
     db.promise(sql, [username, password_hash])
       .then((user_result) => {
@@ -197,7 +202,7 @@ app.post(`/COMP4537/project/${version}/register`, (req, res) => {
             return db.promise(apikey_sql, [apikey, userid]);
           });
         } else {
-          throw "Could not insert user";
+          res.status(500).send({"message": strings.internal_error});
         }
       })
       .then((apikey_result) => {
@@ -206,20 +211,19 @@ app.post(`/COMP4537/project/${version}/register`, (req, res) => {
         if (apikey_result.affectedRows > 0) {
           return db.promise(apikeycall_sql, [apikeyid]);
         } else {
-          throw "Could not insert api key";
+          res.status(500).send({"message": strings.internal_error});
         }
       })
       .then(async (apikeycall_result) => {
-
         if (apikeycall_result.affectedRows > 0) {
-          await axios.patch(`https://elainesweb.com/COMP4537/project/${version}/request/update`, data)
-            .then(async (result_patch) => {
+          await axios.patch(`${server_url}/${version}/request/update`, data)
+            .then(async () => {
               let inccall_data = {
                 username: username,
                 password: password_hash
               }
-              await axios.patch(`https://elainesweb.com/COMP4537/project/${version}/apikeycall/inccall`, inccall_data)
-              .then(async inccall_result => {
+              await axios.patch(`${server_url}/${version}/apikeycall/inccall`, inccall_data)
+              .then(async () => {
                 const payload = { user: username, pass: password };
                 const jwt_token = generateToken(payload);
                 res.cookie("token", jwt_token, {
@@ -231,29 +235,37 @@ app.post(`/COMP4537/project/${version}/register`, (req, res) => {
                 });
                 res.status(201).send(
                   JSON.stringify({
-                    message: "Registration and apikey creation successful",
+                    message: strings.registration_successful,
                     username: username,
-                    type: "user",
+                    type: strings.user,
                   })
                 );
               })
-              .catch(err => console.log(err))
+              .catch(err => {
+                console.log(err)
+                res.status(500).send({"message": strings.internal_error});
+              })
             })
             .catch((err) => {
               console.log(err);
+              res.status(500).send({"message": strings.internal_error});
             });
         } else {
-          throw "Could not insert into api key call";
+          res.status(500).send({"message": strings.internal_error});
         }
       })
       .catch((err) => {
         console.log(err);
+        res.status(500).send({"message": strings.internal_error});
       });
   });
 });
 
-// GET image generated from prompt
-app.get(`/COMP4537/project/${version}/image/:prompt`,jwtAuthentication,async (req, res) => {
+/**
+ * Function that accepts a user prompt and returns a generated image
+ * @param {string} prompt
+ */
+app.get(`/COMP4537/project/${version}/image/:prompt`, jwtAuthentication, async (req, res) => {
     let data = {
       method: "GET",
       endpoint: req.url,
@@ -270,32 +282,100 @@ app.get(`/COMP4537/project/${version}/image/:prompt`,jwtAuthentication,async (re
     await axios
       .get(url_image_gen, { responseType: "arraybuffer" })
       .then(async (response) => {
-        const baseImage = Buffer.from(response.data, "binary").toString(
-          "base64"
-        );
-        await axios.patch(`https://elainesweb.com/COMP4537/project/${version}/request/update`,data)
-          .then(async (result_patch) => {
-            await axios.patch(`https://elainesweb.com/COMP4537/project/${version}/apikeycall/inccall`,inccall_data)
-              .then(inccall_result => {
+        const baseImage = Buffer.from(response.data, "binary").toString("base64");
+        await axios.patch(`${server_url}/${version}/request/update`,data)
+          .then(async () => {
+            await axios.patch(`${server_url}/${version}/apikeycall/inccall`,inccall_data)
+              .then(() => {
                 res.status(200).send({ baseImage });
               })
-              .catch(err => console.log(err));
+              .catch(err => {
+                console.log(err)
+                res.status(500).send({"message": strings.internal_error});
+              });
           })
           .catch((err) => {
             console.log(err);
+            res.status(500).send({"message": strings.internal_error});
           });
       })
-      .catch((error) => {
-        console.log("error:", error.message);
-        res.status(500).send("Internal server error");
+      .catch((err) => {
+        console.log(err);
+        res.status(500).send({"message": strings.internal_error});
       });
   }
 );
 
-// PATCH user
-app.patch(`/COMP4537/project/${version}/user`, async (req, res) => {});
+/**
+ * Function that accepts the user's new username and password and updates the database accordingly
+ */
+app.put(`/COMP4537/project/${version}/user/update`, jwtAuthentication, async (req, res) => {
+  let oldUser = req.payload.user;
+  let oldPass = crypto.createHash("sha256").update(req.payload.pass).digest("base64");
+  let body = "";
+  req.on("data", (chunk) => {
+    if (chunk !== null) {
+      body += chunk;
+    }
+  });
+  req.on("end", async () => {
+    let parsedBody = JSON.parse(body);
 
-// DELETE user 
+    let username = parsedBody.username;
+    let password = crypto.createHash("sha256").update(parsedBody.password).digest("base64")
+
+    let sql = "UPDATE user SET username = ?, password = ? WHERE username = ? AND password = ?";
+    let data = {
+      method: "PUT",
+      endpoint: req.url  
+    } 
+
+    db.promise(sql, [username, password, oldUser, oldPass])
+      .then(async result => {
+        if (result.affectedRows > 0) {
+          let payload = {
+            user: username,
+            pass: parsedBody.password
+          }
+          const jwt_token = generateToken(payload);
+          res.cookie("token", jwt_token, {
+            path: `/`,
+            httpOnly: true,
+            secure: true,
+            maxAge: 3600000,
+            sameSite: "none",
+          });
+          await axios.patch(`${server_url}/${version}/request/update`, data)
+          .then(async () => {
+            let inccall_data = {
+              username: payload.user,
+              password: crypto.createHash("sha256").update(parsedBody.password).digest("base64")
+            }
+            await axios.patch(`${server_url}/${version}/apikeycall/inccall`, inccall_data)
+              .then(() => {
+                res.status(200).end();
+              })
+              .catch(err => {
+                console.log(err)
+                res.status(500).send({"message": "Internal Server Error"});
+              });
+          })
+          .catch((err) => {
+            console.log(err);
+            res.status(500).send({"message": strings.internal_error});
+          });
+        }
+      })
+      .catch(err => {
+        console.log(err)
+        res.status(500).send({"message": "Internal Server Error"});
+      });
+
+})});
+
+/**
+ * Function to delete a user from the database
+ */
 app.delete(`/COMP4537/project/${version}/kermitsewerslide`, jwtAuthentication, (req, res) => {
   let payload = req.payload;
   let username = payload.user
@@ -307,30 +387,27 @@ app.delete(`/COMP4537/project/${version}/kermitsewerslide`, jwtAuthentication, (
   }
 
   let sql = "DELETE FROM user WHERE username = ? AND password = ?";
-  console.log("in the delete function!!")
   db.promise(sql, [username, password])
   .then(async (result)=>{
-    console.log(result);
-    console.log(result.affectedRows)
     if (result.affectedRows > 0) {
-      await axios.patch(`https://elainesweb.com/COMP4537/project/${version}/request/update`, data)
-          .then(async (result_patch) => {
-            res.status(204).send();
+      await axios.patch(`${server_url}/${version}/request/update`, data)
+          .then(async () => {
+            res.status(204).end();
           })
           .catch((err) => {
             console.log(err);
+            res.status(500).send({"message": strings.internal_error});
           });
     } else {
-      res.status(500).send();
+      res.status(500).send({"message": strings.internal_error})
     }
-    
   })
 });
 
-// SELECT THEN POST (endpoint)
+/**
+ * Function that gets the number of calls for each endpoint
+ */
 app.get(`/COMP4537/project/${version}/endpoint`, jwtAuthentication, async (req, res) => {
-    // console.log("in endpoint, showing payload");
-    // console.log(req.payload);
     let data = {
       method: "GET",
       endpoint: req.url,
@@ -339,28 +416,35 @@ app.get(`/COMP4537/project/${version}/endpoint`, jwtAuthentication, async (req, 
     let sql = "SELECT method, endpoint, requestcount FROM request";
     db.promise(sql)
       .then(async (result) => {
-        await axios.patch(`https://elainesweb.com/COMP4537/project/${version}/request/update`, data)
-          .then(async (result_patch) => {
+        await axios.patch(`${server_url}/${version}/request/update`, data)
+          .then(async () => {
             let inccall_data = {
               username: req.payload.user,
               password: crypto.createHash("sha256").update(req.payload.pass).digest("base64")
             }
-            await axios.patch(`https://elainesweb.com/COMP4537/project/${version}/apikeycall/inccall`, inccall_data)
-              .then(result_update => {
+            await axios.patch(`${server_url}/${version}/apikeycall/inccall`, inccall_data)
+              .then(() => {
                 res.status(200).send(result);
               })
-              .catch(err => console.log(err))
+              .catch(err => {
+                console.log(err)
+                res.status(500).send({"message": strings.internal_error})});
           })
           .catch((err) => {
             console.log(err);
+            res.status(500).send({"message": strings.internal_error})
           });
       })
       .catch((err) => {
         console.log(err);
+        res.status(500).send({"message": strings.internal_error})
       });
   }
 );
 
+/**
+ * Function that gets the number of calls for a specific endpoint
+ */
 app.get(`/COMP4537/project/${version}/request`, async (req, res) => {
   const method = req.query.method;
   const endpoint = req.query.endpoint;
@@ -373,9 +457,14 @@ app.get(`/COMP4537/project/${version}/request`, async (req, res) => {
     })
     .catch((err) => {
       console.log(err);
+      throw Error();
     });
-});
+}); 
 
+
+/**
+ * Function that updates the requestcount for a specific endpoint
+ */
 app.patch(`/COMP4537/project/${version}/request/update`, async (req, res) => {
   let body = "";
   req.on("data", (chunk) => {
@@ -384,7 +473,6 @@ app.patch(`/COMP4537/project/${version}/request/update`, async (req, res) => {
     }
   });
   req.on("end", async () => {
-    console.log(body);
     let parsedBody = JSON.parse(body);
 
     let method = parsedBody.method;
@@ -392,7 +480,7 @@ app.patch(`/COMP4537/project/${version}/request/update`, async (req, res) => {
 
     await axios
       .get(
-        `https://elainesweb.com/COMP4537/project/${version}/request?method=${method}&endpoint=${endpoint}`
+        `${server_url}/${version}/request?method=${method}&endpoint=${endpoint}`
       )
       .then((result) => {
         let requestid = result.data.requestid;
@@ -405,19 +493,21 @@ app.patch(`/COMP4537/project/${version}/request/update`, async (req, res) => {
           })
           .catch((err) => {
             console.log(err);
+            throw Error();
           });
       })
       .catch((err) => {
         console.log(err);
+        throw Error();
       });
   });
 });
 
-// get the api usages
-// pp.patch(`/COMP4537/project/${version}/apikeycall/inccall`, async (req, res) => {
+
+/**
+ * Function that gets the number of api calls for each user
+ */
 app.get(`/COMP4537/project/${version}/apiusages`, jwtAuthentication, async (req, res) => {
-    console.log("in api usages");
-    console.log(req.cookies.token);
     let sql = `
       SELECT user.username, apikey.apikeyid, apikeycall.calls FROM user 
       JOIN apikey ON user.userid = apikey.userid 
@@ -434,52 +524,87 @@ app.get(`/COMP4537/project/${version}/apiusages`, jwtAuthentication, async (req,
       username: req.payload.user,
       password: hashed_password
     }
-
-    console.log("api usages: just before the axios request ")
     db.promise(sql) // apikeyid, calls 
-      .then(async (inccall_result) => {
-        await axios.patch(`https://elainesweb.com/COMP4537/project/${version}/request/update`, update_data)
-          .then(async update_result => {
-            await axios.patch(`https://elainesweb.com/COMP4537/project/${version}/apikeycall/inccall`, inccall_data)
-              .then(result_update => {
+      .then(async (result) => {
+        await axios.patch(`${server_url}/${version}/request/update`, update_data)
+          .then(async () => {
+            await axios.patch(`${server_url}/${version}/apikeycall/inccall`, inccall_data)
+              .then(() => {
                 res.status(200).send(result);
               })
-              .catch(err => console.log(err))
+              .catch(err => {
+                console.log(err)
+                res.status(500).send({"message": strings.internal_error});
+              })
           })
-          .catch(err => console.log(err))
+          .catch(err => {
+            console.log(err)
+            res.status(500).send({"message": strings.internal_error});
+          })
       })
-      .catch(err => console.log(err))
+      .catch(err => {
+        console.log(err)
+        res.status(500).send({"message": strings.internal_error})})
 }
 );
 
 
-/** gets the number of calls made for a user */
+/**
+ * Function that gets the number of api calls for a specific user
+ */
 app.get(`/COMP4537/project/${version}/apikeycall`, jwtAuthentication, (req, res) => {
   let username = req.payload.user
   let hashed_password = crypto.createHash("sha256").update(req.payload.pass).digest("base64");
 
+  let update_data = {
+    method: "GET",
+    endpoint: req.url
+  }
+
+  let inccall_data = {
+    username: username,
+    password: hashed_password,
+  };
   //  # calls
   let sql_apikeyid_calls = `SELECT apikeycall.calls as calls FROM user
     JOIN apikey ON user.userid = apikey.userid
     JOIN apikeycall ON apikey.apikeyid = apikeycall.apikeyid
     WHERE user.username = ? AND user.password = ?`;
   db.promise(sql_apikeyid_calls, [username, hashed_password])
-    .then(result => {
-      let response = {
-        "calls": result[0].calls
-      }
-      res.status(200).send(response)
+    .then(async result => {
+      await axios.patch(`${server_url}/${version}/request/update`, update_data)
+          .then(async () => {
+            await axios.patch(`${server_url}/${version}/apikeycall/inccall`, inccall_data)
+              .then(() => {
+                let response = {
+                  "calls": result[0].calls
+                }
+                res.status(200).send(response)
+              })
+              .catch(err => {
+                console.log(err)
+                res.status(500).send({"message": strings.internal_error});
+              })
+          })
+          .catch(err => {
+            console.log(err)
+            res.status(500).send({"message": strings.internal_error});
+          })
     })
-    .catch(err => console.log(err));
+    .catch(err => {
+      console.log(err)
+      res.status(500).send({"message": strings.internal_error});
+    });
 
 });
 
 
 
-// (patch) increment the calls from apikeycall table using apikeyid and calls
+/**
+ * Function that increments the number of calls for a specific user
+ */
 app.patch(`/COMP4537/project/${version}/apikeycall/inccall`, async (req, res) => {
-    console.log("in inncaallalll")
-    //gets apikeyid and # calls
+  
     let sql_apikeyid_calls = `SELECT apikey.apikeyid as apikeyid, apikeycall.calls as calls FROM user
     JOIN apikey ON user.userid = apikey.userid
     JOIN apikeycall ON apikey.apikeyid = apikeycall.apikeyid
@@ -493,16 +618,8 @@ app.patch(`/COMP4537/project/${version}/apikeycall/inccall`, async (req, res) =>
     });
     req.on("end", async () => {
       let parsedBody = JSON.parse(body);
-      console.log("body:")
-      console.log(body)
-      console.log("parsedbody:")
-      console.log(parsedBody)
       let username = parsedBody.username;
       let password = parsedBody.password;
-
-      console.log("password sent over via data in inccall")
-      console.log(parsedBody.password)
-
       db.promise(sql_apikeyid_calls, [username, password])
         //result = apikeyid, calls [{apikeyid,calls}]
         .then((result) => {
@@ -513,9 +630,15 @@ app.patch(`/COMP4537/project/${version}/apikeycall/inccall`, async (req, res) =>
             .then((result_patch) => {
               res.send(result_patch);
             })
-            .catch((err) => console.log(err));
+            .catch((err) => {
+              console.log(err);
+              throw Error();
+            });
         })
-        .catch((err) => console.log(err));
+        .catch((err) => {
+          console.log(err);
+          throw Error();
+        });
     });
   }
 );

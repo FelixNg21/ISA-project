@@ -1,8 +1,6 @@
 const version = "v2";
 const url = `https://elainesweb.com/COMP4537/project/${version}`;
 
-
-
 const viewEndpointStats = () => {
   const xhttp = new XMLHttpRequest();
   xhttp.withCredentials = true;
