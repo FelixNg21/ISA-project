@@ -13,9 +13,19 @@
   "paths": {
     "/login": {
       "post": {
-        "tags": ["Login"],
+        "tags": ["login"],
         "summary": "Login to the application",
         "description": "Endpoint 1 Description",
+        "parameters": [
+          {
+            "name": "requestBody",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/RequestModel"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful response",
@@ -28,7 +38,7 @@
     },
     "/register": {
       "post": {
-        "tags": ["Register"],
+        "tags": ["register"],
         "summary": "Register a User",
         "description": "Endpoint 2 Description",
         "parameters": [
@@ -53,7 +63,7 @@
     },
     "/image:prompt": {
       "get": {
-        "tags": ["Image"],
+        "tags": ["image"],
         "summary": "Generate an image from a prompt",
         "description": "Endpoint 3 Description",
         "parameters": [
@@ -76,9 +86,24 @@
     },
     "/endpoint": {
       "get": {
-        "tags": ["Endpoint"],
+        "tags": ["endpoint"],
         "summary": "Endpoint 4 Summary",
         "description": "Endpoint 4 Description",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "schema": {
+              "$ref": "#/definitions/ResponseModel"
+            }
+          }
+        }
+      }
+    },
+    "/apiusages": {
+      "get": {
+        "tags": ["apiusages"],
+        "summary": "Get the number of usages of the api",
+        "description": "Endpoint 5 Description",
         "responses": {
           "200": {
             "description": "Successful response",

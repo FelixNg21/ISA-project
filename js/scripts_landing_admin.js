@@ -1,12 +1,9 @@
 const version = "v2";
 const url = `https://elainesweb.com/COMP4537/project/${version}`;
 
-let params = new URLSearchParams(window.location.search);
-let username = params.get("username");
 
-document.getElementById("username").innerHTML = "Welcome, " + username + "!";
 
-const doThing = () => {
+const viewEndpointStats = () => {
   const xhttp = new XMLHttpRequest();
   xhttp.withCredentials = true;
   let endpoint = `/endpoint`;
@@ -15,7 +12,6 @@ const doThing = () => {
   xhttp.onreadystatechange = function () {
     if (this.readyState == 4) {
       if (this.status == 200) {
-        console.log(this.response);
 
         // Parse JSON data
         var responseList = JSON.parse(this.response);
@@ -53,17 +49,15 @@ const doThing = () => {
   };
 };
 
-const doThing2 = () => {
-  console.log("doing 2")
+const viewApikeyUsage = () => {
   const xhttp = new XMLHttpRequest();
+  xhttp.withCredentials = true;
   let endpoint = '/apiusages';
-  xhttp.open("PATCH", url+endpoint, true)
+  xhttp.open("GET", url+endpoint, true)
   xhttp.send();
   xhttp.onreadystatechange = function(){
     if(this.readyState == 4){
       if (this.status == 200){
-        console.log(this.response);
-
         //parse JSON data
         var responseList = JSON.parse(this.response);
 

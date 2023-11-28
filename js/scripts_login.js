@@ -12,8 +12,6 @@ function swapForm() {
 }
 
 function submit(){
-    // console.log(loggingIn)
-    // console.log(url)
     let endpoint = "";
     let xhttp = new XMLHttpRequest();
     xhttp.withCredentials = true;
@@ -26,12 +24,9 @@ function submit(){
         alert("Passwords do not match");
         return;
       }
-      console.log("create account")
       endpoint = '/register';
       
     }else if(username && password && loggingIn){
-      //login
-      console.log("login")
       endpoint = '/login'
     }else{
       alert("Please fill in all fields");
@@ -42,35 +37,22 @@ function submit(){
         "username": username,
         "password": password
     };
-
-    console.log("username:", username);
-    console.log("password:", password);
-
-    console.log("sending the post request to !!!!", url+endpoint)
     xhttp.open("POST", url+endpoint, true);
     xhttp.setRequestHeader("Content-Type", "application/json",
-    "Access-Control-Allow-Credentials", "true",
-    "Access-Control-Allow-Origin", "*");
+    "Access-Control-Allow-Credentials", "true");
     xhttp.send(JSON.stringify(data));
     xhttp.onreadystatechange = function() {
         if (this.readyState == 4){
             if (this.status == 201){
-              // console.log(document.cookie);
               message = JSON.parse(this.responseText);
+              let token = xhttp.getResponseHeader("Authorization");
                 //successful
-                if (message.type === 'admin'){ // user
-                    console.log("admin successfully logged in")
-                    // user landing page
-                    // window.location.href = `./landing_admin.html?username=${message.username}`;
-                }else if (message.type === 'user'){ // admin
-                  console.log("user successfully logged in")
+                if (message.type === 'admin'){ 
+                  window.location.href = `./landing_admin.html?username=${message.username}`;
+                }else if (message.type === 'user'){ 
                   window.location.href = `./landing_user.html?username=${message.username}`;
-                  // redirected to admin landing page
-                    // login and checks if admin or regula user
                 }
-                // navigate to user/admin landing page
-              
-                
+  
             }
             if (this.status == 401){
               console.log(this.responseText)
@@ -79,3 +61,5 @@ function submit(){
         }
     }
 }
+
+
