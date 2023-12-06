@@ -18,8 +18,12 @@ const version = "v2";
 app.use(`/COMP4537/project/${version}/doc`, swaggerui.serve, swaggerui.setup(swaggerDocument));
 
 
-// sql databse credentials-  please input proper credentials! 
+// sql databse credentials
 let db = mysql.createConnection({
+  host: "localhost",
+  user: "elainesw_project",
+  password: "elainesw_isaproject",
+  database: "elainesw_isaproject",
 });
 
 // connect to database
